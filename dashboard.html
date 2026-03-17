@@ -1,0 +1,1192 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>冒険者ダッシュボード</title>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=DotGothic16&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #080818;
+  --panel: #12122a;
+  --panel2: #1c1c3e;
+  --border: #4455aa;
+  --border-bright: #8899ff;
+  --gold: #ffd700;
+  --gold-dim: #aa8800;
+  --green: #22cc44;
+  --green-dim: #115522;
+  --red: #ee3333;
+  --blue: #3388ff;
+  --mp: #aa44ff;
+  --text: #dde0ff;
+  --dim: #667;
+  --white: #ffffff;
+  --shadow: #000066;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: var(--bg);
+  background-image:
+    radial-gradient(circle at 20% 20%, #1a1a4a 0%, transparent 50%),
+    radial-gradient(circle at 80% 80%, #1a0a3a 0%, transparent 50%);
+  color: var(--text);
+  font-family: 'DotGothic16', monospace;
+  min-height: 100vh;
+  padding: 16px;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+/* === RPG WINDOW === */
+.window {
+  background: var(--panel);
+  border: 3px solid var(--border);
+  box-shadow: 0 0 0 1px #223, inset 0 0 0 1px #334488, 0 4px 24px #000a;
+  border-radius: 4px;
+  margin-bottom: 16px;
+  overflow: hidden;
+}
+.window-title {
+  background: var(--border);
+  background: linear-gradient(90deg, #334499 0%, #223388 100%);
+  padding: 8px 14px;
+  font-family: 'DotGothic16', monospace;
+  font-size: 13px;
+  color: var(--gold);
+  letter-spacing: 2px;
+  border-bottom: 2px solid var(--border-bright);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.window-title .icon { font-size: 16px; }
+.window-body { padding: 14px; }
+
+/* === HEADER === */
+#header {
+  background: linear-gradient(135deg, #0a0a2a 0%, #1a1060 50%, #0a0a2a 100%);
+  border: 3px solid var(--gold-dim);
+  box-shadow: 0 0 20px #3344aa88, inset 0 0 40px #00005522;
+  border-radius: 4px;
+  padding: 18px 20px 14px;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+#char-sprite {
+  font-size: 48px;
+  line-height: 1;
+  filter: drop-shadow(0 0 8px #8899ff);
+  animation: float 3s ease-in-out infinite;
+}
+@keyframes float {
+  0%,100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+#char-info { flex: 1; min-width: 200px; }
+#char-name {
+  font-family: 'DotGothic16', monospace;
+  font-size: 18px;
+  color: var(--gold);
+  letter-spacing: 3px;
+  text-shadow: 0 0 10px #ffd70088;
+  margin-bottom: 4px;
+}
+#char-title {
+  font-size: 11px;
+  color: #aab;
+  margin-bottom: 8px;
+}
+#level-display {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+#level-num {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 20px;
+  color: var(--gold);
+  text-shadow: 0 0 8px #ffd700;
+  min-width: 60px;
+}
+.exp-bar-wrap { flex: 1; max-width: 200px; }
+.exp-bar-label { font-size: 10px; color: var(--dim); margin-bottom: 2px; }
+.bar-track {
+  height: 12px;
+  background: #111133;
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.bar-fill {
+  height: 100%;
+  border-radius: 2px;
+  transition: width 0.5s ease;
+  position: relative;
+}
+.bar-fill::after {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 40%;
+  background: rgba(255,255,255,0.2);
+  border-radius: 2px 2px 0 0;
+}
+.exp-fill { background: linear-gradient(90deg, #ffa500, #ffd700); }
+.green-fill { background: linear-gradient(90deg, #116633, #22cc44); }
+.red-fill { background: linear-gradient(90deg, #881111, #ee3333); }
+.blue-fill { background: linear-gradient(90deg, #113388, #3388ff); }
+.mp-fill { background: linear-gradient(90deg, #660099, #aa44ff); }
+.yellow-fill { background: linear-gradient(90deg, #886600, #ffcc00); }
+
+#today-date {
+  font-size: 11px;
+  color: var(--dim);
+  text-align: right;
+  align-self: flex-start;
+  font-family: 'DotGothic16', monospace;
+}
+
+/* === GRID === */
+.grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+@media (max-width: 700px) {
+  .grid-2 { grid-template-columns: 1fr; }
+}
+
+/* === STATS === */
+.stat-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 0;
+  border-bottom: 1px solid #223;
+}
+.stat-row:last-child { border-bottom: none; }
+.stat-check {
+  width: 20px; height: 20px;
+  border: 2px solid var(--border);
+  background: #0a0a1a;
+  border-radius: 3px;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px;
+  flex-shrink: 0;
+  transition: all 0.15s;
+}
+.stat-check:hover { border-color: var(--gold); }
+.stat-check.checked {
+  background: var(--green-dim);
+  border-color: var(--green);
+  color: var(--green);
+}
+.stat-info { flex: 1; min-width: 0; }
+.stat-name { font-size: 12px; color: var(--text); margin-bottom: 3px; }
+.stat-bar-wrap { display: flex; align-items: center; gap: 6px; }
+.stat-mini-bar { flex: 1; height: 8px; background: #111133; border: 1px solid #334; border-radius: 1px; overflow: hidden; }
+.stat-streak { font-size: 10px; color: var(--dim); flex-shrink: 0; white-space: nowrap; }
+
+/* === TODO === */
+.todo-tabs {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+.todo-tab {
+  padding: 4px 10px;
+  font-size: 10px;
+  border: 1px solid var(--border);
+  background: var(--panel);
+  color: var(--dim);
+  cursor: pointer;
+  border-radius: 2px;
+  transition: all 0.15s;
+  font-family: 'DotGothic16', monospace;
+}
+.todo-tab:hover { border-color: var(--gold-dim); color: var(--text); }
+.todo-tab.active { background: var(--border); color: var(--gold); border-color: var(--gold-dim); }
+
+.todo-list { max-height: 280px; overflow-y: auto; margin-bottom: 10px; }
+.todo-list::-webkit-scrollbar { width: 4px; }
+.todo-list::-webkit-scrollbar-track { background: #111; }
+.todo-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+.todo-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 6px;
+  border-bottom: 1px solid #1a1a3a;
+  transition: background 0.1s;
+}
+.todo-item:hover { background: #1a1a3a; }
+.todo-cb { width: 16px; height: 16px; accent-color: var(--green); cursor: pointer; flex-shrink: 0; }
+.todo-text {
+  flex: 1;
+  font-size: 12px;
+  color: var(--text);
+  word-break: break-all;
+}
+.todo-text.done { text-decoration: line-through; color: var(--dim); }
+.todo-cat-badge {
+  font-size: 9px;
+  padding: 1px 5px;
+  border-radius: 2px;
+  border: 1px solid;
+  flex-shrink: 0;
+}
+.cat-学術 { color: #66aaff; border-color: #334466; }
+.cat-発信 { color: #ffaa44; border-color: #664422; }
+.cat-睡眠 { color: #aa88ff; border-color: #442266; }
+.cat-英語 { color: #44ccaa; border-color: #226644; }
+.cat-健康 { color: #ff6666; border-color: #662222; }
+.cat-その他 { color: #aaa; border-color: #444; }
+.todo-del {
+  background: none; border: none; color: var(--dim); cursor: pointer;
+  font-size: 12px; padding: 0 4px; line-height: 1;
+  flex-shrink: 0;
+}
+.todo-del:hover { color: var(--red); }
+
+.todo-add-row {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.rpg-select {
+  background: var(--panel2);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 5px 8px;
+  font-size: 11px;
+  font-family: 'DotGothic16', monospace;
+  border-radius: 2px;
+  cursor: pointer;
+}
+.rpg-input {
+  flex: 1;
+  min-width: 120px;
+  background: var(--panel2);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 5px 8px;
+  font-size: 12px;
+  font-family: 'DotGothic16', monospace;
+  border-radius: 2px;
+  outline: none;
+}
+.rpg-input:focus { border-color: var(--gold-dim); }
+.rpg-btn {
+  background: linear-gradient(180deg, #334499 0%, #223388 100%);
+  border: 1px solid var(--border-bright);
+  color: var(--gold);
+  padding: 5px 12px;
+  font-size: 11px;
+  font-family: 'DotGothic16', monospace;
+  cursor: pointer;
+  border-radius: 2px;
+  transition: all 0.15s;
+}
+.rpg-btn:hover { background: linear-gradient(180deg, #4455bb 0%, #334499 100%); }
+.rpg-btn:active { transform: translateY(1px); }
+
+.week-label {
+  font-size: 10px;
+  color: var(--dim);
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.week-label .reset-btn {
+  font-size: 9px;
+  background: none;
+  border: 1px solid var(--dim);
+  color: var(--dim);
+  padding: 2px 6px;
+  cursor: pointer;
+  border-radius: 2px;
+  font-family: 'DotGothic16', monospace;
+}
+.week-label .reset-btn:hover { color: var(--red); border-color: var(--red); }
+
+/* === PDCA === */
+.pdca-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+@media (max-width: 500px) {
+  .pdca-grid { grid-template-columns: 1fr; }
+}
+.pdca-card {
+  background: var(--panel2);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 10px;
+}
+.pdca-label {
+  font-size: 11px;
+  color: var(--gold);
+  margin-bottom: 6px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.pdca-badge {
+  font-size: 9px;
+  padding: 1px 6px;
+  border-radius: 10px;
+  font-family: 'Press Start 2P', monospace;
+}
+.badge-p { background: #113388; color: #66aaff; }
+.badge-d { background: #116633; color: #44cc66; }
+.badge-c { background: #663311; color: #ffaa44; }
+.badge-a { background: #551133; color: #ff66aa; }
+.pdca-textarea {
+  width: 100%;
+  background: #0a0a1a;
+  border: 1px solid #334;
+  color: var(--text);
+  padding: 7px;
+  font-size: 11px;
+  font-family: 'DotGothic16', monospace;
+  border-radius: 2px;
+  resize: vertical;
+  min-height: 80px;
+  outline: none;
+  line-height: 1.5;
+}
+.pdca-textarea:focus { border-color: var(--border); }
+.pdca-save-row { margin-top: 10px; display: flex; justify-content: flex-end; }
+
+/* === ROADMAP === */
+.roadmap-section { margin-bottom: 16px; }
+.roadmap-section-title {
+  font-size: 11px;
+  color: var(--gold);
+  margin-bottom: 8px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.roadmap-progress {
+  font-size: 10px;
+  color: var(--dim);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.roadmap-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 6px 4px;
+  border-bottom: 1px solid #1a1a2a;
+  font-size: 11px;
+}
+.roadmap-item:last-child { border-bottom: none; }
+.roadmap-item input[type=checkbox] { margin-top: 2px; accent-color: var(--gold); flex-shrink: 0; }
+.roadmap-item-text { flex: 1; color: var(--text); line-height: 1.4; }
+.roadmap-item-text.done { text-decoration: line-through; color: var(--dim); }
+.roadmap-cat {
+  font-size: 9px;
+  color: var(--dim);
+  flex-shrink: 0;
+}
+.progress-bar-section { margin-top: 8px; }
+.progress-label {
+  display: flex;
+  justify-content: space-between;
+  font-size: 10px;
+  color: var(--dim);
+  margin-bottom: 3px;
+}
+.progress-pct { color: var(--gold); }
+
+/* === STREAK FIRE === */
+.streak-fire { font-size: 12px; }
+
+/* === SCROLLABLE TABS === */
+.tab-filtered { display: none; }
+.tab-filtered.visible { display: flex; flex-direction: column; }
+.tab-all .todo-item { display: flex; }
+
+/* === TOAST === */
+#toast {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%) translateY(60px);
+  background: var(--panel2);
+  border: 2px solid var(--green);
+  color: var(--green);
+  padding: 10px 20px;
+  font-size: 12px;
+  font-family: 'DotGothic16', monospace;
+  border-radius: 4px;
+  transition: transform 0.3s ease;
+  z-index: 999;
+  white-space: nowrap;
+}
+#toast.show { transform: translateX(-50%) translateY(0); }
+
+/* === LEVEL UP === */
+@keyframes levelUp {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.3); color: #fff; text-shadow: 0 0 20px #ffd700; }
+  100% { transform: scale(1); }
+}
+.level-up-anim { animation: levelUp 0.6s ease; }
+
+/* === SYNC INDICATOR === */
+#sync-status {
+  font-size: 10px;
+  padding: 2px 8px;
+  border-radius: 2px;
+  border: 1px solid;
+  white-space: nowrap;
+}
+.sync-ok  { color: var(--green); border-color: var(--green-dim); }
+.sync-ing { color: var(--gold);  border-color: var(--gold-dim); animation: blink 1s step-start infinite; }
+.sync-err { color: var(--red);   border-color: #661111; }
+.sync-off { color: var(--dim);   border-color: #333; }
+@keyframes blink { 50% { opacity: 0.4; } }
+
+/* === SETTINGS BTN === */
+#settings-btn {
+  background: none;
+  border: 1px solid var(--dim);
+  color: var(--dim);
+  padding: 4px 8px;
+  font-size: 14px;
+  cursor: pointer;
+  border-radius: 2px;
+  line-height: 1;
+  transition: all 0.15s;
+  font-family: 'DotGothic16', monospace;
+}
+#settings-btn:hover { border-color: var(--gold-dim); color: var(--gold); }
+
+/* === MODAL === */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.85);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+.modal-box {
+  background: var(--panel);
+  border: 3px solid var(--border-bright);
+  border-radius: 4px;
+  padding: 24px;
+  max-width: 460px;
+  width: 100%;
+  box-shadow: 0 0 40px #0008;
+}
+.modal-title {
+  font-family: 'DotGothic16', monospace;
+  font-size: 14px;
+  color: var(--gold);
+  margin-bottom: 14px;
+  letter-spacing: 2px;
+}
+.modal-desc {
+  font-size: 11px;
+  color: #aab;
+  margin-bottom: 14px;
+  line-height: 1.8;
+}
+.modal-field { margin-bottom: 10px; }
+.modal-label {
+  font-size: 11px;
+  color: var(--dim);
+  margin-bottom: 4px;
+  display: block;
+}
+.modal-note {
+  font-size: 10px;
+  color: var(--dim);
+  margin-top: 12px;
+  padding: 8px;
+  border: 1px solid #334;
+  border-radius: 2px;
+  line-height: 1.7;
+}
+.modal-footer {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  margin-top: 16px;
+  flex-wrap: wrap;
+}
+.rpg-btn-danger {
+  background: linear-gradient(180deg, #661111 0%, #441111 100%);
+  border: 1px solid #882222;
+  color: #ff8888;
+  padding: 5px 12px;
+  font-size: 11px;
+  font-family: 'DotGothic16', monospace;
+  cursor: pointer;
+  border-radius: 2px;
+  transition: all 0.15s;
+}
+.rpg-btn-gold {
+  border-color: var(--gold-dim) !important;
+  color: var(--gold) !important;
+}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div id="header">
+  <div id="char-sprite">🧙</div>
+  <div id="char-info">
+    <div id="char-name">手上肢の勇者</div>
+    <div id="char-title">作業療法士 / 研究者 / 発信者</div>
+    <div id="level-display">
+      <div id="level-num">Lv.<span id="lv">1</span></div>
+      <div class="exp-bar-wrap">
+        <div class="exp-bar-label">EXP <span id="exp-cur">0</span> / <span id="exp-next">100</span></div>
+        <div class="bar-track"><div class="bar-fill exp-fill" id="exp-bar" style="width:0%"></div></div>
+      </div>
+    </div>
+    <div style="font-size:10px; color:var(--dim);">習慣の継続が経験値になる ▶ 毎日チェックでレベルアップ！</div>
+  </div>
+  <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;align-self:flex-start;">
+    <div id="today-date"></div>
+    <div style="display:flex;gap:6px;align-items:center;">
+      <div id="sync-status" class="sync-off">⚙ 未設定</div>
+      <button id="settings-btn" onclick="showSetupModal()" title="GitHub同期設定">⚙ 同期</button>
+    </div>
+  </div>
+</div>
+
+<!-- MAIN GRID: HABITS + TODO -->
+<div class="grid-2">
+
+  <!-- HABITS -->
+  <div class="window">
+    <div class="window-title"><span class="icon">⚔️</span>今日のステータス</div>
+    <div class="window-body" id="habits-body">
+      <!-- JS で生成 -->
+    </div>
+  </div>
+
+  <!-- TODO -->
+  <div class="window">
+    <div class="window-title"><span class="icon">📋</span>今週のクエスト</div>
+    <div class="window-body">
+      <div class="week-label">
+        <span id="week-label-text"></span>
+        <button class="reset-btn" onclick="resetWeek()">週リセット</button>
+      </div>
+      <div class="todo-tabs" id="todo-tabs">
+        <div class="todo-tab active" data-cat="すべて" onclick="switchCat(this)">すべて</div>
+        <div class="todo-tab" data-cat="学術" onclick="switchCat(this)">📚学術</div>
+        <div class="todo-tab" data-cat="発信" onclick="switchCat(this)">✍️発信</div>
+        <div class="todo-tab" data-cat="睡眠" onclick="switchCat(this)">🌙睡眠</div>
+        <div class="todo-tab" data-cat="英語" onclick="switchCat(this)">🇬🇧英語</div>
+        <div class="todo-tab" data-cat="健康" onclick="switchCat(this)">💪健康</div>
+        <div class="todo-tab" data-cat="その他" onclick="switchCat(this)">その他</div>
+      </div>
+      <div class="todo-list" id="todo-list"></div>
+      <div class="todo-add-row">
+        <select class="rpg-select" id="new-cat">
+          <option>学術</option>
+          <option>発信</option>
+          <option>睡眠</option>
+          <option>英語</option>
+          <option>健康</option>
+          <option>その他</option>
+        </select>
+        <input class="rpg-input" id="new-todo" placeholder="タスクを入力..." onkeydown="if(event.key==='Enter')addTodo()">
+        <button class="rpg-btn" onclick="addTodo()">＋追加</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- PDCA -->
+<div class="window">
+  <div class="window-title"><span class="icon">🔄</span>週次PDCA</div>
+  <div class="window-body">
+    <div class="pdca-grid">
+      <div class="pdca-card">
+        <div class="pdca-label"><span class="pdca-badge badge-p">P</span>Plan — 今週の宣言</div>
+        <textarea class="pdca-textarea" id="pdca-plan" placeholder="今週達成したいことを宣言する..."></textarea>
+      </div>
+      <div class="pdca-card">
+        <div class="pdca-label"><span class="pdca-badge badge-d">D</span>Do — 実績メモ</div>
+        <textarea class="pdca-textarea" id="pdca-do" placeholder="実際にやったことをメモ..."></textarea>
+      </div>
+      <div class="pdca-card">
+        <div class="pdca-label"><span class="pdca-badge badge-c">C</span>Check — 振り返り</div>
+        <textarea class="pdca-textarea" id="pdca-check" placeholder="よかった点・悪かった点・気づき..."></textarea>
+      </div>
+      <div class="pdca-card">
+        <div class="pdca-label"><span class="pdca-badge badge-a">A</span>Act — 来週への改善</div>
+        <textarea class="pdca-textarea" id="pdca-act" placeholder="来週変えること・試すこと..."></textarea>
+      </div>
+    </div>
+    <div class="pdca-save-row">
+      <button class="rpg-btn" onclick="savePdca()">💾 保存する</button>
+    </div>
+  </div>
+</div>
+
+<!-- ROADMAP -->
+<div class="window">
+  <div class="window-title"><span class="icon">🗺️</span>ロードマップ進捗（2026年末目標）</div>
+  <div class="window-body" id="roadmap-body">
+    <!-- JS で生成 -->
+  </div>
+</div>
+
+<!-- TOAST -->
+<div id="toast"></div>
+
+<!-- SETUP MODAL -->
+<div id="setup-modal" class="modal-overlay" style="display:none;">
+  <div class="modal-box">
+    <div class="modal-title">⚙ GitHub 同期設定</div>
+    <div class="modal-desc">
+      設定するとPC・iPad・スマホで同じデータを共有できます。<br>
+      GitHubリポジトリとPersonal Access Token（PAT）が必要です。
+    </div>
+    <div class="modal-field">
+      <label class="modal-label">GitHub ユーザー名</label>
+      <input class="rpg-input" id="cfg-owner" placeholder="例: your-username" style="width:100%">
+    </div>
+    <div class="modal-field">
+      <label class="modal-label">リポジトリ名</label>
+      <input class="rpg-input" id="cfg-repo" placeholder="例: habit-dashboard" style="width:100%">
+    </div>
+    <div class="modal-field">
+      <label class="modal-label">Personal Access Token (PAT)</label>
+      <input class="rpg-input" id="cfg-token" type="password" placeholder="ghp_xxxxxxxxxxxx" style="width:100%">
+    </div>
+    <div class="modal-note">
+      🔒 PATはこのデバイスのみに保存されます（外部サーバーへの送信なし）。<br>
+      GitHub → Settings → Developer settings → Fine-grained tokens<br>
+      　対象リポジトリ → Permissions → Contents → Read and Write
+    </div>
+    <div class="modal-footer">
+      <button class="rpg-btn rpg-btn-danger" onclick="clearConfig()">設定を削除</button>
+      <button class="rpg-btn" onclick="hideSetupModal()">キャンセル</button>
+      <button class="rpg-btn rpg-btn-gold" onclick="saveConfig()">💾 保存して同期</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ===== DATA =====
+const HABITS = [
+  { id: 'sleep',    name: '🌙 就寝時間を前倒し',     color: 'mp-fill',     desc: '目標: 23:00就寝' },
+  { id: 'wakeup',   name: '⏰ 目標時刻に起床',        color: 'blue-fill',   desc: '目標: 5:00起床' },
+  { id: 'study',    name: '📚 学術インプット',         color: 'green-fill',  desc: '論文・文献を1つ読む' },
+  { id: 'note',     name: '✍️ Note/Twitter 発信',     color: 'yellow-fill', desc: '投稿 or 記事を書く' },
+  { id: 'english',  name: '🇬🇧 英語5分',              color: 'blue-fill',   desc: 'Duolingo or シャドーイング' },
+  { id: 'exercise', name: '💪 運動',                  color: 'red-fill',    desc: 'エアロバイク or ランニング' },
+];
+
+const ROADMAP_ITEMS = [
+  // 学術
+  { id: 'rm01', cat: '学術', text: '研究テーマを一文で言語化する' },
+  { id: 'rm02', cat: '学術', text: '倫理審査の必要性を確認する' },
+  { id: 'rm03', cat: '学術', text: '目標学会の抄録締め切りを調べる' },
+  { id: 'rm04', cat: '学術', text: 'データ収集を開始する（4〜7月）' },
+  { id: 'rm05', cat: '学術', text: '学会発表 1回（2026年内）' },
+  { id: 'rm06', cat: '学術', text: '論文執筆を開始する（10月〜）' },
+  // 発信
+  { id: 'rm07', cat: '発信', text: 'Twitter固定ツイートを更新（手上肢OT自己紹介）' },
+  { id: 'rm08', cat: '発信', text: 'Note最初の記事を公開する' },
+  { id: 'rm09', cat: '発信', text: 'Note有料記事 or メンバーシップを開始する' },
+  { id: 'rm10', cat: '発信', text: 'Twitterフォロワー 500人達成' },
+  { id: 'rm11', cat: '発信', text: '初収益（1円でも）達成' },
+  // 睡眠
+  { id: 'rm12', cat: '睡眠', text: '23:00就寝を1週間継続する' },
+  { id: 'rm13', cat: '睡眠', text: '22:30就寝を1ヶ月継続する' },
+  { id: 'rm14', cat: '睡眠', text: '5:00起床を安定させる' },
+  // 健康
+  { id: 'rm15', cat: '健康', text: '薄毛治療クリニックに受診予約する' },
+  { id: 'rm16', cat: '健康', text: '週3回の運動を1ヶ月継続する' },
+  // 英語
+  { id: 'rm17', cat: '英語', text: 'Duolingo インストール・起動する' },
+  { id: 'rm18', cat: '英語', text: '英語学習を30日連続継続する' },
+];
+
+// ===== GITHUB SYNC =====
+let currentSHA = null;
+let syncTimer  = null;
+
+function getGHConfig() {
+  try { return JSON.parse(localStorage.getItem('gh_config') || 'null'); }
+  catch(e) { return null; }
+}
+
+function setSyncStatus(status) {
+  const el = document.getElementById('sync-status');
+  if (!el) return;
+  el.className = '';
+  if      (status === 'ok')  { el.className = 'sync-ok';  el.textContent = '✅ 同期済'; }
+  else if (status === 'ing') { el.className = 'sync-ing'; el.textContent = '🔄 同期中...'; }
+  else if (status === 'err') { el.className = 'sync-err'; el.textContent = '⚠️ 同期エラー'; }
+  else                       { el.className = 'sync-off'; el.textContent = '⚙ 未設定'; }
+}
+
+async function loadFromGitHub() {
+  const cfg = getGHConfig();
+  if (!cfg) { setSyncStatus('off'); return; }
+  setSyncStatus('ing');
+  try {
+    const res = await fetch(
+      `https://api.github.com/repos/${cfg.owner}/${cfg.repo}/contents/data.json`,
+      { headers: { Authorization: `Bearer ${cfg.token}`, Accept: 'application/vnd.github+json' } }
+    );
+    if (res.status === 404) {
+      // data.json がまだ存在しない場合 → 現在のローカルデータをアップロード
+      await saveToGitHub(true);
+      return;
+    }
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const json = await res.json();
+    currentSHA = json.sha;
+    const content = JSON.parse(atob(json.content.replace(/\n/g, '')));
+    if (content.habitData)   localStorage.setItem('habitData',   JSON.stringify(content.habitData));
+    if (content.todoData)    localStorage.setItem('todoData',    JSON.stringify(content.todoData));
+    if (content.pdcaData)    localStorage.setItem('pdcaData',    JSON.stringify(content.pdcaData));
+    if (content.roadmapData) localStorage.setItem('roadmapData', JSON.stringify(content.roadmapData));
+    setSyncStatus('ok');
+  } catch(e) {
+    console.error('loadFromGitHub:', e);
+    setSyncStatus('err');
+    showToast('⚠️ GitHub読み込みエラー: ' + e.message);
+  }
+}
+
+async function saveToGitHub(isInit) {
+  const cfg = getGHConfig();
+  if (!cfg) return;
+  setSyncStatus('ing');
+  try {
+    const data = {
+      habitData:   JSON.parse(localStorage.getItem('habitData')   || '{}'),
+      todoData:    JSON.parse(localStorage.getItem('todoData')    || '{}'),
+      pdcaData:    JSON.parse(localStorage.getItem('pdcaData')    || '{}'),
+      roadmapData: JSON.parse(localStorage.getItem('roadmapData') || '{}'),
+    };
+    const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(data, null, 2))));
+    const body = { message: 'sync: ' + new Date().toISOString(), content: encoded };
+    if (currentSHA) body.sha = currentSHA;
+    const res = await fetch(
+      `https://api.github.com/repos/${cfg.owner}/${cfg.repo}/contents/data.json`,
+      {
+        method: 'PUT',
+        headers: {
+          Authorization: `Bearer ${cfg.token}`,
+          Accept: 'application/vnd.github+json',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(body),
+      }
+    );
+    if (!res.ok) {
+      if (res.status === 409) {
+        // SHA競合 → 最新SHA取得して再試行
+        currentSHA = null;
+        await loadFromGitHub();
+        await saveToGitHub(isInit);
+        return;
+      }
+      throw new Error('HTTP ' + res.status);
+    }
+    const json = await res.json();
+    currentSHA = json.content.sha;
+    setSyncStatus('ok');
+    if (!isInit) showToast('☁️ GitHubに同期しました');
+  } catch(e) {
+    console.error('saveToGitHub:', e);
+    setSyncStatus('err');
+    showToast('⚠️ 同期エラー: ' + e.message);
+  }
+}
+
+function scheduleSync() {
+  clearTimeout(syncTimer);
+  syncTimer = setTimeout(() => saveToGitHub(false), 2000);
+}
+
+function showSetupModal() {
+  const cfg = getGHConfig();
+  if (cfg) {
+    document.getElementById('cfg-owner').value = cfg.owner || '';
+    document.getElementById('cfg-repo').value  = cfg.repo  || '';
+    document.getElementById('cfg-token').value = cfg.token || '';
+  }
+  document.getElementById('setup-modal').style.display = 'flex';
+}
+
+function hideSetupModal() {
+  document.getElementById('setup-modal').style.display = 'none';
+}
+
+async function saveConfig() {
+  const owner = document.getElementById('cfg-owner').value.trim();
+  const repo  = document.getElementById('cfg-repo').value.trim();
+  const token = document.getElementById('cfg-token').value.trim();
+  if (!owner || !repo || !token) { showToast('⚠️ すべての項目を入力してください'); return; }
+  localStorage.setItem('gh_config', JSON.stringify({ owner, repo, token }));
+  hideSetupModal();
+  showToast('設定を保存しました。GitHubに接続中...');
+  await loadFromGitHub();
+  render();
+}
+
+function clearConfig() {
+  if (!confirm('GitHub同期設定を削除しますか？')) return;
+  localStorage.removeItem('gh_config');
+  currentSHA = null;
+  setSyncStatus('off');
+  hideSetupModal();
+  showToast('設定を削除しました');
+}
+
+// ===== STORAGE =====
+function getHabits() { try { return JSON.parse(localStorage.getItem('habitData') || '{}'); } catch(e) { return {}; } }
+function setHabits(d) { localStorage.setItem('habitData', JSON.stringify(d)); scheduleSync(); }
+function getTodos() { try { return JSON.parse(localStorage.getItem('todoData') || '{}'); } catch(e) { return {}; } }
+function setTodos(d) { localStorage.setItem('todoData', JSON.stringify(d)); scheduleSync(); }
+function getPdca() { try { return JSON.parse(localStorage.getItem('pdcaData') || '{}'); } catch(e) { return {}; } }
+function setPdca(d) { localStorage.setItem('pdcaData', JSON.stringify(d)); scheduleSync(); }
+function getRoadmap() { try { return JSON.parse(localStorage.getItem('roadmapData') || '{}'); } catch(e) { return {}; } }
+function setRoadmap(d) { localStorage.setItem('roadmapData', JSON.stringify(d)); scheduleSync(); }
+
+// ===== HELPERS =====
+function todayKey() {
+  const d = new Date();
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+}
+function weekKey() {
+  const d = new Date();
+  const jan1 = new Date(d.getFullYear(), 0, 1);
+  const week = Math.ceil(((d - jan1) / 86400000 + jan1.getDay() + 1) / 7);
+  return d.getFullYear() + '-W' + String(week).padStart(2,'0');
+}
+function weekRange() {
+  const d = new Date();
+  const day = d.getDay() === 0 ? 6 : d.getDay() - 1;
+  const mon = new Date(d); mon.setDate(d.getDate() - day);
+  const sun = new Date(mon); sun.setDate(mon.getDate() + 6);
+  const fmt = x => (x.getMonth()+1) + '/' + x.getDate();
+  return fmt(mon) + ' 〜 ' + fmt(sun);
+}
+function calcStreaks() {
+  const data = getHabits();
+  const streaks = {};
+  HABITS.forEach(h => {
+    let streak = 0;
+    const d = new Date();
+    for (let i = 0; i < 365; i++) {
+      const key = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+      if (data[key] && data[key][h.id]) { streak++; d.setDate(d.getDate()-1); }
+      else break;
+    }
+    streaks[h.id] = streak;
+  });
+  return streaks;
+}
+function calcTotalExp() {
+  const data = getHabits();
+  let total = 0;
+  Object.values(data).forEach(day => { Object.values(day).forEach(v => { if(v) total++; }); });
+  return total * 10;
+}
+function expForLevel(lv) { return lv <= 1 ? 0 : Math.floor(100 * Math.pow(1.4, lv - 2)); }
+function calcLevel(exp) {
+  let lv = 1;
+  while (expForLevel(lv + 1) <= exp) lv++;
+  return lv;
+}
+
+// ===== RENDER =====
+let currentCat = 'すべて';
+let prevLevel = 1;
+
+function renderHeader() {
+  const now = new Date();
+  const days = ['日','月','火','水','木','金','土'];
+  document.getElementById('today-date').textContent =
+    now.getFullYear() + '年' + (now.getMonth()+1) + '月' + now.getDate() + '日（' + days[now.getDay()] + '）';
+
+  const exp = calcTotalExp();
+  const lv = calcLevel(exp);
+  const thisLvExp = expForLevel(lv);
+  const nextLvExp = expForLevel(lv + 1);
+  const pct = nextLvExp > thisLvExp ? Math.floor((exp - thisLvExp) / (nextLvExp - thisLvExp) * 100) : 100;
+  const lvEl = document.getElementById('lv');
+  if (prevLevel > 0 && lv > prevLevel) {
+    lvEl.classList.add('level-up-anim');
+    setTimeout(() => lvEl.classList.remove('level-up-anim'), 700);
+    showToast('✨ レベルアップ！ Lv.' + lv + ' になった！');
+  }
+  prevLevel = lv;
+  lvEl.textContent = lv;
+  document.getElementById('exp-cur').textContent = exp - thisLvExp;
+  document.getElementById('exp-next').textContent = nextLvExp - thisLvExp;
+  document.getElementById('exp-bar').style.width = pct + '%';
+}
+
+function renderHabits() {
+  const data = getHabits();
+  const today = todayKey();
+  const todayData = data[today] || {};
+  const streaks = calcStreaks();
+
+  let html = '';
+  HABITS.forEach(h => {
+    const checked = !!todayData[h.id];
+    const streak = streaks[h.id];
+    const streakText = streak > 0 ? '🔥×' + streak : '';
+    const barW = Math.min(100, streak * 10);
+    html += `
+      <div class="stat-row">
+        <div class="stat-check ${checked ? 'checked' : ''}" onclick="toggleHabit('${h.id}')">${checked ? '✔' : ''}</div>
+        <div class="stat-info">
+          <div class="stat-name">${h.name}</div>
+          <div class="stat-bar-wrap">
+            <div class="stat-mini-bar"><div class="bar-fill ${h.color}" style="width:${barW}%"></div></div>
+            <div class="stat-streak">${streakText}</div>
+          </div>
+        </div>
+      </div>`;
+  });
+  document.getElementById('habits-body').innerHTML = html;
+}
+
+function toggleHabit(id) {
+  const data = getHabits();
+  const today = todayKey();
+  if (!data[today]) data[today] = {};
+  data[today][id] = !data[today][id];
+  setHabits(data);
+  renderHabits();
+  renderHeader();
+  if (data[today][id]) showToast('✔ ' + HABITS.find(h=>h.id===id).name + ' 完了！');
+}
+
+function renderTodos() {
+  const allData = getTodos();
+  const wk = weekKey();
+  const todos = allData[wk] || [];
+  document.getElementById('week-label-text').textContent = '週: ' + weekRange() + ' (' + wk + ')';
+
+  let html = '';
+  todos.forEach((t, i) => {
+    if (currentCat !== 'すべて' && t.cat !== currentCat) return;
+    html += `
+      <div class="todo-item">
+        <input type="checkbox" class="todo-cb" ${t.done ? 'checked' : ''} onchange="toggleTodo(${i})">
+        <span class="todo-cat-badge cat-${t.cat}">${t.cat}</span>
+        <span class="todo-text ${t.done ? 'done' : ''}">${escHtml(t.text)}</span>
+        <button class="todo-del" onclick="delTodo(${i})" title="削除">✕</button>
+      </div>`;
+  });
+  if (!html) html = '<div style="padding:16px;text-align:center;color:var(--dim);font-size:11px;">タスクはありません。下から追加してください。</div>';
+  document.getElementById('todo-list').innerHTML = html;
+}
+
+function escHtml(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function switchCat(el) {
+  document.querySelectorAll('.todo-tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  currentCat = el.dataset.cat;
+  renderTodos();
+}
+
+function addTodo() {
+  const text = document.getElementById('new-todo').value.trim();
+  const cat = document.getElementById('new-cat').value;
+  if (!text) return;
+  const allData = getTodos();
+  const wk = weekKey();
+  if (!allData[wk]) allData[wk] = [];
+  allData[wk].push({ id: Date.now(), cat, text, done: false });
+  setTodos(allData);
+  document.getElementById('new-todo').value = '';
+  renderTodos();
+  showToast('クエスト追加: ' + text.slice(0,20));
+}
+
+function toggleTodo(idx) {
+  const allData = getTodos();
+  const wk = weekKey();
+  if (!allData[wk]) return;
+  // idx is in displayed list, need to map back
+  const todos = allData[wk];
+  let visIdx = -1;
+  let actualIdx = -1;
+  for (let i = 0; i < todos.length; i++) {
+    if (currentCat === 'すべて' || todos[i].cat === currentCat) visIdx++;
+    if (visIdx === idx) { actualIdx = i; break; }
+  }
+  if (actualIdx === -1) return;
+  todos[actualIdx].done = !todos[actualIdx].done;
+  setTodos(allData);
+  renderTodos();
+}
+
+function delTodo(idx) {
+  const allData = getTodos();
+  const wk = weekKey();
+  if (!allData[wk]) return;
+  const todos = allData[wk];
+  let visIdx = -1;
+  let actualIdx = -1;
+  for (let i = 0; i < todos.length; i++) {
+    if (currentCat === 'すべて' || todos[i].cat === currentCat) visIdx++;
+    if (visIdx === idx) { actualIdx = i; break; }
+  }
+  if (actualIdx === -1) return;
+  todos.splice(actualIdx, 1);
+  setTodos(allData);
+  renderTodos();
+}
+
+function resetWeek() {
+  if (!confirm('今週のクエストをリセットしますか？')) return;
+  const allData = getTodos();
+  const wk = weekKey();
+  allData[wk] = [];
+  setTodos(allData);
+  renderTodos();
+}
+
+function renderPdca() {
+  const data = getPdca();
+  const wk = weekKey();
+  const cur = data[wk] || {};
+  document.getElementById('pdca-plan').value = cur.plan || '';
+  document.getElementById('pdca-do').value = cur.do || '';
+  document.getElementById('pdca-check').value = cur.check || '';
+  document.getElementById('pdca-act').value = cur.act || '';
+}
+
+function savePdca() {
+  const data = getPdca();
+  const wk = weekKey();
+  data[wk] = {
+    plan:  document.getElementById('pdca-plan').value,
+    do:    document.getElementById('pdca-do').value,
+    check: document.getElementById('pdca-check').value,
+    act:   document.getElementById('pdca-act').value,
+  };
+  setPdca(data);
+  showToast('💾 PDCAを保存しました！');
+}
+
+function renderRoadmap() {
+  const data = getRoadmap();
+  const cats = [...new Set(ROADMAP_ITEMS.map(r=>r.cat))];
+  let html = '';
+  cats.forEach(cat => {
+    const items = ROADMAP_ITEMS.filter(r=>r.cat===cat);
+    const done = items.filter(r=>data[r.id]).length;
+    const pct = Math.floor(done/items.length*100);
+    html += `<div class="roadmap-section">
+      <div class="roadmap-section-title">
+        <span>${cat}</span>
+        <div class="roadmap-progress">
+          <span>${done}/${items.length}</span>
+          <span class="progress-pct">${pct}%</span>
+        </div>
+      </div>`;
+    items.forEach(r => {
+      const checked = !!data[r.id];
+      html += `<div class="roadmap-item">
+        <input type="checkbox" ${checked?'checked':''} onchange="toggleRoadmap('${r.id}')">
+        <span class="roadmap-item-text ${checked?'done':''}">${escHtml(r.text)}</span>
+      </div>`;
+    });
+    html += `<div class="progress-bar-section">
+      <div class="bar-track"><div class="bar-fill green-fill" style="width:${pct}%"></div></div>
+    </div></div>`;
+  });
+  document.getElementById('roadmap-body').innerHTML = html;
+}
+
+function toggleRoadmap(id) {
+  const data = getRoadmap();
+  data[id] = !data[id];
+  setRoadmap(data);
+  renderRoadmap();
+  if (data[id]) showToast('🏆 達成: ' + ROADMAP_ITEMS.find(r=>r.id===id).text.slice(0,24) + '…');
+}
+
+let toastTimer;
+function showToast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 2500);
+}
+
+// ===== RENDER + INIT =====
+function render() {
+  renderHeader();
+  renderHabits();
+  renderTodos();
+  renderPdca();
+  renderRoadmap();
+}
+
+async function init() {
+  // 初期Todoがなければサンプルを入れる（ローカル）
+  const allData = getTodos();
+  const wk = weekKey();
+  if (!allData[wk] || allData[wk].length === 0) {
+    allData[wk] = [
+      { id: 1, cat: '学術', text: '研究テーマを一文で書く', done: false },
+      { id: 2, cat: '学術', text: '目標学会の抄録締め切りを調べる', done: false },
+      { id: 3, cat: '発信', text: 'Twitter固定ツイートを更新する', done: false },
+      { id: 4, cat: '発信', text: 'Note最初の記事タイトルを決める', done: false },
+      { id: 5, cat: '睡眠', text: '今夜23:00に消灯する', done: false },
+      { id: 6, cat: '英語', text: 'Duolingoインストール・今日5分やる', done: false },
+    ];
+    localStorage.setItem('todoData', JSON.stringify(allData)); // setTodosを使わず直接書き込み（初期化時はsync不要）
+  }
+
+  // まずローカルデータで即座に描画
+  render();
+
+  // GitHub設定があれば最新データを取得して再描画
+  const cfg = getGHConfig();
+  if (cfg) {
+    await loadFromGitHub();
+    render();
+  }
+}
+
+init();
+</script>
+</body>
+</html>
